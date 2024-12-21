@@ -15,13 +15,15 @@ endif()
 set(CMAKE_AUTOMOC ON)
 
 # Find Qt
-find_package(Qt5 REQUIRED COMPONENTS Widgets Charts)
+find_package(Qt5 REQUIRED COMPONENTS Widgets Charts Network)
 
 # Add the executable
 add_executable(MyQtChartsApp main.cpp ChartWindow.cpp)
 
 # Link Qt libraries
-target_link_libraries(MyQtChartsApp Qt5::Widgets Qt5::Charts)
+target_link_libraries(MyQtChartsApp 
+    PRIVATE 
+        Qt5::Widgets Qt5::Charts Qt5::Network)
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)

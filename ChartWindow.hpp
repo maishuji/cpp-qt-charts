@@ -7,6 +7,8 @@
 #include <QtCharts/QBarSet>
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QChart>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 
 #include <memory>
 
@@ -21,10 +23,15 @@ public:
     ~ChartWindow(); // Destructor declaration
 
     void plotDataFromCSV(const QString &filePath, QChartView &chartView);
+    void plotDataFromAPI(QChartView &chartView, const QString &cryptoName);
+
+public slots:
+    void onDataReceived(QNetworkReply *reply, QChartView &chartView, const QString &cryptoName);
 
 private:
     struct PImpl;
     std::unique_ptr<class PImpl> pImpl;
+    QNetworkAccessManager *networkManager;
 };
 
 #endif // CHARTWINDOW_H
