@@ -4,11 +4,15 @@
 #include <QtCharts/QBarSet>
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QLineSeries>
+#include <QComboBox>
 #include <QTextStream>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDateTime>
+#include <QValueAxis>
+#include <QDateTimeAxis>
+#include <QLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 
@@ -20,6 +24,7 @@ struct ChartWindow::PImpl
     QChartView *chartView2;
     QChartView *chartView3;
     QChartView *chartView4;
+    QComboBox *comboBox;
     QLabel *errorLabel;
 };
 
@@ -32,9 +37,28 @@ namespace
     {
         // Create a new chart and configure it
         QChart *chart = new QChart();
-        chart->addSeries(series);   // Add the provided QLineSeries to the chart
-        chart->createDefaultAxes(); // Automatically create axes based on the series
-        chart->setTitle(title);     // Set the chart title
+        chart->addSeries(series); // Add the provided QLineSeries to the chart
+        // chart->createDefaultAxes(); // Automatically create axes based on the series
+        chart->setTitle(title); // Set the chart title
+
+        // Create and configure the DateTime axis
+        QDateTimeAxis *axisX = new QDateTimeAxis();
+        axisX->setRange(QDateTime::fromMSecsSinceEpoch(series->at(0).x()),
+                        QDateTime::fromMSecsSinceEpoch(series->at(series->count() - 1).x()));
+        axisX->setFormat("dd/MM/yy-hh:mm");
+        axisX->setLabelsAngle(90);
+        QFont font("Arial", 10);
+        axisX->setLabelsFont(font);
+        axisX->setTitleText("Date");
+        axisX->setTickCount(10);                // Set the number of ticks to display
+        chart->addAxis(axisX, Qt::AlignBottom); // Attach the X-axis to the series
+        series->attachAxis(axisX);              // Can only attach to axes after they are added to the chart
+
+        // Create and configure the Y-axis
+        QValueAxis *axisY = new QValueAxis();
+        axisY->setTitleText("Value");
+        chart->addAxis(axisY, Qt::AlignLeft); // Attach the axis to the chart
+        series->attachAxis(axisY);            // Attach the series to the Y-axis
 
         // Set the chart in the chart view
         chartView.setChart(chart);
@@ -73,6 +97,16 @@ namespace
     }
 }
 
+template <typename T>
+void setChartWithComboLayout(T &layout, QChartView *chartView, QComboBox *comboBox)
+{
+    static_assert(std::is_base_of<QLayout, typename std::remove_pointer<T>::type>::value, "T must be derived from QLayout");
+    QVBoxLayout *vLayout = new QVBoxLayout();
+    vLayout->addWidget(comboBox);
+    vLayout->addWidget(chartView);
+    layout.addLayout(vLayout);
+}
+
 ChartWindow::ChartWindow(QWidget *parent)
     : QWidget(parent),
       networkManager(new QNetworkAccessManager(this))
@@ -82,6 +116,10 @@ ChartWindow::ChartWindow(QWidget *parent)
     pImpl->chartView2 = new QChartView(this);
     pImpl->chartView3 = new QChartView(this);
     pImpl->chartView4 = new QChartView(this);
+    pImpl->comboBox = new QComboBox(this);
+
+    pImpl->comboBox->addItems({"Bitcoin", "Ethereum", "Solana", "SUI", "Cardano", "Dogecoin"});
+
     // Create a bar set
     if (!pImpl->chartView1 || !pImpl->chartView2)
     {
@@ -91,7 +129,13 @@ ChartWindow::ChartWindow(QWidget *parent)
     QHBoxLayout *layout = new QHBoxLayout();
 
     QVBoxLayout *vLayout1 = new QVBoxLayout();
-    vLayout1->addWidget(pImpl->chartView1);
+    setChartWithComboLayout(*vLayout1, pImpl->chartView1, pImpl->comboBox);
+    connect(pImpl->comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index)
+            {
+        QString cryptoName = pImpl->comboBox->currentText().toLower();
+        plotDataFromAPI(*(pImpl->chartView1), cryptoName); });
+
+    // vLayout1->addWidget(pImpl->chartView1);
     vLayout1->addWidget(pImpl->chartView3);
 
     QVBoxLayout *vLayout2 = new QVBoxLayout();
@@ -206,7 +250,6 @@ void ChartWindow::onDataReceived(QNetworkReply *reply, QChartView &chartView, co
 
     // Create a series to hold the data
     QLineSeries *series = new QLineSeries();
-
     // Populate the series with data (timestamp and price)
     for (const QJsonValue &value : prices)
     {
@@ -216,9 +259,13 @@ void ChartWindow::onDataReceived(QNetworkReply *reply, QChartView &chartView, co
 
         // Convert timestamp to QDateTime
         QDateTime dateTime = QDateTime::fromSecsSinceEpoch(timestamp / 1000); // Convert from milliseconds
-        qreal x = dateTime.toMSecsSinceEpoch();                               // Use milliseconds for x-axis
+        qreal x = dateTime.toMSecsSinceEpoch();
+
+        // Use milliseconds for x-axis
         series->append(x, price);
     }
+
+    // chartView.chart()->addAxis(axisX, Qt::AlignBottom);
 
     plotSeries(series, chartView, cryptoName + " Price Over Time");
 
