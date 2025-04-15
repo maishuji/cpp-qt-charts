@@ -18,12 +18,26 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt5 REQUIRED COMPONENTS Widgets Charts Network)
 
 # Add the executable
-add_executable(MyQtChartsApp main.cpp ChartWindow.cpp)
+add_executable(MyQtChartsApp 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ChartWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MainWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/MainWindow.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ChartWindow.hpp
+)
 
 # Link Qt libraries
 target_link_libraries(MyQtChartsApp 
     PRIVATE 
-        Qt5::Widgets Qt5::Charts Qt5::Network)
+        Qt5::Widgets 
+        Qt5::Charts 
+        Qt5::Network)
+
+# Include directories
+target_include_directories(MyQtChartsApp 
+    PUBLIC 
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
