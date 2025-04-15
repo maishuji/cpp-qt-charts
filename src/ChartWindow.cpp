@@ -1,4 +1,5 @@
 #include "ChartWindow.hpp"
+
 #include <QtCharts/QChartView>
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QBarSet>
