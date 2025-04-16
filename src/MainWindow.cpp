@@ -1,21 +1,19 @@
 // mainwindow.cpp
 #include "MainWindow.hpp"
 
-#include <QMessageBox>
+#include <QAction>
 #include <QFileDialog>
 #include <QInputDialog>
-#include <QMenuBar>
 #include <QMenu>
-#include <QAction>
+#include <QMenuBar>
+#include <QMessageBox>
 
-#include "version.hpp"
 #include "ChartWindow.hpp"
+#include "version.hpp"
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-{
-    chartWindow = new ChartWindow(this); // reuse your existing QWidget
-    setCentralWidget(chartWindow);       // embed it in the main window
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+    chartWindow = new ChartWindow(this);  //  reuse your existing QWidget
+    setCentralWidget(chartWindow);        //  embed it in the main window
 
     // Create Menu
     menuBar = new QMenuBar(this);
@@ -34,9 +32,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(exitAction, &QAction::triggered, this, &MainWindow::close);
 }
 
-void MainWindow::showVersion()
-{
+void MainWindow::showVersion() {
     // Show version using a message box
-    QMessageBox::information(this, tr("Version Information"),
+    QMessageBox::information(this,
+                             tr("Version Information"),
                              tr("Version: %1").arg(APP_VERSION_STRING));
 }

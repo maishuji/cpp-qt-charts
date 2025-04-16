@@ -1,0 +1,3 @@
+set noparent
+filter=-runtime/references,-whitespace/indent,-build/include_subdir,-readability/casting,-readability/naming
+linelength=120
