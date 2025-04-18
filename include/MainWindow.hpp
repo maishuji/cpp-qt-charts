@@ -3,19 +3,19 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "ChartWindow.hpp" // Include your existing chart window
 
-class MainWindow : public QMainWindow
-{
+#include "ChartWindow.hpp"  // Include your existing chart window
+
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
-public:
+ public:
     MainWindow(QWidget *parent = nullptr);
 
-private slots:
+ private slots:
     void showVersion();
 
-private:
+ private:
     ChartWindow *chartWindow;
     QMenuBar *menuBar;
     QMenu *fileMenu;
@@ -24,4 +24,4 @@ private:
     QAction *versionAction;
 };
 
-#endif // MAINWINDOW_H
+#endif  // MAINWINDOW_H

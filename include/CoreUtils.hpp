@@ -6,6 +6,7 @@
 namespace coreUtils
 {
     QString makeCacheFileName(const QString& argName) noexcept;
+    bool shouldRefreshCache(const QString& argName) noexcept;
 }
 
 
