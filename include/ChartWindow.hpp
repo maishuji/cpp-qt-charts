@@ -24,6 +24,7 @@ public:
 
     void plotDataFromCSV(const QString &filePath, QChartView &chartView);
     void plotDataFromAPI(QChartView &chartView, const QString &cryptoName);
+    void plotJsonData(QJsonObject &jsonObject, QChartView &chartView, const QString &cryptoName);
 
 public slots:
     void onDataReceived(QNetworkReply *reply, QChartView &chartView, const QString &cryptoName);

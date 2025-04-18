@@ -14,6 +14,8 @@ endif()
 # Enable automatic moc processing
 set(CMAKE_AUTOMOC ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Find Qt
 find_package(Qt5 REQUIRED COMPONENTS Widgets Charts Network)
 
@@ -22,8 +24,10 @@ add_executable(MyQtChartsApp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ChartWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MainWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CoreUtils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/MainWindow.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ChartWindow.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/CoreUtils.hpp
 )
 
 # Link Qt libraries

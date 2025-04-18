@@ -3,6 +3,9 @@
 #include <QComboBox>
 #include <QDateTime>
 #include <QDateTimeAxis>
+#include <QDebug>
+#include <QDir>
+#include <QFile>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -16,6 +19,8 @@
 #include <QtCharts/QBarSet>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
+
+#include "CoreUtils.hpp"
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -219,6 +224,22 @@ void ChartWindow::plotDataFromCSV(const QString &filePath,
 
 void ChartWindow::plotDataFromAPI(QChartView &chartView,
                                   const QString &cryptoName) {
+
+    if(!coreUtils::shouldRefreshCache(cryptoName)){
+        qDebug() << "Using cached data for" << cryptoName;
+        QString fn = coreUtils::makeCacheFileName(cryptoName);
+        QFile file(fn);
+        if (file.open(QIODevice::ReadOnly)) {
+            QByteArray responseData = file.readAll();
+            QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData);
+            QJsonObject jsonObject = jsonDoc.object();
+            plotJsonData(jsonObject, chartView, cryptoName);
+            return;
+        } else {
+            qWarning("Failed to open cache file for reading");
+        }
+    }
+
     // CoinGecko API URL for hourly data over the last 7 days
     // No need of API key from CoinGecko to access this data
     QUrl url(QString("https://api.coingecko.com/api/v3/coins/%1/"
@@ -251,8 +272,25 @@ void ChartWindow::onDataReceived(QNetworkReply *reply, QChartView &chartView,
 
     // Parse the JSON response
     QByteArray responseData = reply->readAll();
+    if (!responseData.isEmpty()) {
+        QString fn = coreUtils::makeCacheFileName(cryptoName);
+        QFile file(fn);
+        if (file.open(QIODevice::WriteOnly)) {
+            file.write(responseData);
+            file.close();
+        } else {
+            qWarning("Failed to open cache file for writing");
+        }
+    }
+
     QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData);
     QJsonObject jsonObject = jsonDoc.object();
+    plotJsonData(jsonObject, chartView, cryptoName);
+
+    reply->deleteLater();  // Clean up the reply object
+}
+
+void ChartWindow::plotJsonData(QJsonObject &jsonObject, QChartView &chartView, const QString &cryptoName){
     QJsonArray prices = jsonObject["prices"].toArray();
 
     // Create a series to hold the data
@@ -273,6 +311,7 @@ void ChartWindow::onDataReceived(QNetworkReply *reply, QChartView &chartView,
     }
 
     plotSeries(series, chartView, cryptoName + " Price Over Time");
-
-    reply->deleteLater();  // Clean up the reply object
 }
+
+
+
