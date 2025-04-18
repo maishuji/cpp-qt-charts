@@ -3,6 +3,9 @@
 #include <QComboBox>
 #include <QDateTime>
 #include <QDateTimeAxis>
+#include <QDebug>
+#include <QDir>
+#include <QFile>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -16,6 +19,8 @@
 #include <QtCharts/QBarSet>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
+
+#include "CoreUtils.hpp"
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -251,6 +256,17 @@ void ChartWindow::onDataReceived(QNetworkReply *reply, QChartView &chartView,
 
     // Parse the JSON response
     QByteArray responseData = reply->readAll();
+    if (!responseData.isEmpty()) {
+        QString fn = coreUtils::makeCacheFileName(cryptoName);
+        QFile file(fn);
+        if (file.open(QIODevice::WriteOnly)) {
+            file.write(responseData);
+            file.close();
+        } else {
+            qWarning("Failed to open cache file for writing");
+        }
+    }
+
     QJsonDocument jsonDoc = QJsonDocument::fromJson(responseData);
     QJsonObject jsonObject = jsonDoc.object();
     QJsonArray prices = jsonObject["prices"].toArray();

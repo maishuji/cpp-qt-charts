@@ -22,8 +22,10 @@ add_executable(MyQtChartsApp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ChartWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MainWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CoreUtils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/MainWindow.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ChartWindow.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/CoreUtils.hpp
 )
 
 # Link Qt libraries
