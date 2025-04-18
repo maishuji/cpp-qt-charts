@@ -14,6 +14,8 @@ endif()
 # Enable automatic moc processing
 set(CMAKE_AUTOMOC ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Find Qt
 find_package(Qt5 REQUIRED COMPONENTS Widgets Charts Network)
 
