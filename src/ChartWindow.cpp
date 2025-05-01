@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QGraphicsScene>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -13,6 +14,7 @@
 #include <QLabel>
 #include <QLayout>
 #include <QTextStream>
+#include <QTimer>
 #include <QValueAxis>
 #include <QtCharts/QBarCategoryAxis>
 #include <QtCharts/QBarSeries>
@@ -21,6 +23,7 @@
 #include <QtCharts/QLineSeries>
 
 #include "CoreUtils.hpp"
+#include "DraggableLine.hpp"
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -37,11 +40,55 @@ ChartWindow::~ChartWindow() = default;  // Destructor definition
 
 namespace {
 
+qreal getMaxX(QLineSeries *series) {
+    auto maxIt = std::max_element(
+        series->points().begin(),
+        series->points().end(),
+        [](const QPointF &a, const QPointF &b) { return a.x() >= b.x(); });
+    return maxIt != series->points().end() ? maxIt->x() : 0.0;
+}
+
+qreal getMinX(QXYSeries *series) {
+    auto minIt = std::min_element(
+        series->points().begin(),
+        series->points().end(),
+        [](const QPointF &a, const QPointF &b) { return a.x() < b.x(); });
+    return minIt != series->points().end() ? minIt->x() : 0.0;
+}
+
 void plotSeries(QLineSeries *series, QChartView &chartView,
                 const QString &title) {
+    // Find local min and max
+    qreal minY = series->at(0).y();
+    qreal maxY = minY;
+    qreal minX = series->at(0).x();
+    qreal maxX = minX;
+
+    for (int i = 1; i < series->count(); ++i) {
+        const QPointF &point = series->at(i);
+        if (point.y() < minY) minY = point.y();
+        if (point.y() > maxY) maxY = point.y();
+        if (point.x() < minX) minX = point.x();
+        if (point.x() > maxX) maxX = point.x();
+    }
+
+    // Create min line
+    QLineSeries *minLine = new QLineSeries();
+    minLine->append(minX, minY);
+    minLine->append(maxX, minY);
+    minLine->setName("Min");
+
+    // Create max line
+    QLineSeries *maxLine = new QLineSeries();
+    maxLine->append(minX, maxY);
+    maxLine->append(maxX, maxY);
+    maxLine->setName("Max");
+
     // Create a new chart and configure it
     QChart *chart = new QChart();
     chart->addSeries(series);  // Add the provided QLineSeries to the chart
+    chart->addSeries(minLine);
+    chart->addSeries(maxLine);
     // chart->createDefaultAxes(); // Automatically create axes based on the
     // series
     chart->setTitle(title);  // Set the chart title
@@ -58,18 +105,42 @@ void plotSeries(QLineSeries *series, QChartView &chartView,
     axisX->setTitleText("Date");
     axisX->setTickCount(10);  // Set the number of ticks to display
     chart->addAxis(axisX, Qt::AlignBottom);  // Attach the X-axis to the series
-    series->attachAxis(
-        axisX);  // Can only attach to axes after they are added to the chart
+    // series->attachAxis(
+    //     axisX);  // Can only attach to axes after they are added to the chart
 
     // Create and configure the Y-axis
     QValueAxis *axisY = new QValueAxis();
     axisY->setTitleText("Value");
     chart->addAxis(axisY, Qt::AlignLeft);  // Attach the axis to the chart
-    series->attachAxis(axisY);             // Attach the series to the Y-axis
+    // series->attachAxis(axisY);             // Attach the series to the Y-axis
+
+    // Attach series to axes
+    for (QLineSeries *s : {series, minLine, maxLine}) {
+        s->attachAxis(axisX);
+        s->attachAxis(axisY);
+    }
 
     // Set the chart in the chart view
     chartView.setChart(chart);
     chartView.setMinimumSize(640, 480);
+
+    // The line will be set to the y center in the plotAreaChanged event
+    DraggableLine *line = new DraggableLine(0, 0, 100, 100);
+    chartView.scene()->addItem(line);
+
+    QObject::connect(chart,
+                     &QChart::plotAreaChanged,
+                     [&chartView, chart, line](const QRectF &plotArea) {
+                         QPointF left = chart->mapToScene(plotArea.topLeft());
+                         QPointF right = chart->mapToScene(plotArea.topRight());
+                         QPointF center = chart->mapToScene(plotArea.center());
+                         QPointF start(left.x(), center.y());
+                         QPointF end(right.x(), center.y());
+
+                         if (line) {
+                             line->setLine(QLineF(start, end));
+                         }
+                     });
 }
 
 void plotSomeData(QChartView &chartView) {
@@ -224,8 +295,7 @@ void ChartWindow::plotDataFromCSV(const QString &filePath,
 
 void ChartWindow::plotDataFromAPI(QChartView &chartView,
                                   const QString &cryptoName) {
-
-    if(!coreUtils::shouldRefreshCache(cryptoName)){
+    if (!coreUtils::shouldRefreshCache(cryptoName)) {
         qDebug() << "Using cached data for" << cryptoName;
         QString fn = coreUtils::makeCacheFileName(cryptoName);
         QFile file(fn);
@@ -290,7 +360,8 @@ void ChartWindow::onDataReceived(QNetworkReply *reply, QChartView &chartView,
     reply->deleteLater();  // Clean up the reply object
 }
 
-void ChartWindow::plotJsonData(QJsonObject &jsonObject, QChartView &chartView, const QString &cryptoName){
+void ChartWindow::plotJsonData(QJsonObject &jsonObject, QChartView &chartView,
+                               const QString &cryptoName) {
     QJsonArray prices = jsonObject["prices"].toArray();
 
     // Create a series to hold the data
@@ -312,6 +383,3 @@ void ChartWindow::plotJsonData(QJsonObject &jsonObject, QChartView &chartView, c
 
     plotSeries(series, chartView, cryptoName + " Price Over Time");
 }
-
-
-
